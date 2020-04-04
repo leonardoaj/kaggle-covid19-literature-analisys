@@ -62,40 +62,43 @@ def read_json(file):
     return "\n".join([x['text'] for x in json_file['body_text']])
 
 def get_literature_as_list() -> list:
+    #
+    # try:
+    #     text_list = pickle.load(open("text_list.p", "rb"))
+    # except:
 
-    try:
-        text_list = pickle.load(open("text_list.p", "rb"))
-    except:
+    text_list = []
+    files = get_filename_list()
+    total_files = len(files)
+    num_cores = multiprocessing.cpu_count()
+    chunk_size = total_files // num_cores
 
-        text_list = []
-        files = get_filename_list()
-        total_files = len(files)
-        num_cores = multiprocessing.cpu_count()
-        chunk_size = total_files // num_cores
-        output = {}
-        processes = []
+    processes = []
+    manager = multiprocessing.Manager()
+    output = manager.dict()
 
-        for rank in range(num_cores):
+    for rank in range(num_cores):
 
-            if rank + 1 == num_cores:
-                file_chunk = files[rank*chunk_size:]
-            else:
-                file_chunk = files[rank*chunk_size: (rank+1)*chunk_size]
+        if rank + 1 == num_cores:
+            file_chunk = files[rank*chunk_size:]
+        else:
+            file_chunk = files[rank*chunk_size: (rank+1)*chunk_size]
 
-            print(f"Reading chunk {rank}...")
-            json_contents_list = [read_json(x) for x in file_chunk]
+        print(f"Reading chunk {rank}...")
+        json_contents_list = [read_json(x) for x in file_chunk]
 
-            p = multiprocessing.Process(target=pre_process, args=(json_contents_list, output, rank))
-            p.start()
-            processes.append(p)
+        p = multiprocessing.Process(target=pre_process, args=(json_contents_list, output, rank))
+        p.start()
+        processes.append(p)
 
-        for p in processes:
-            p.join()
+    for k, p in enumerate(processes):
+        p.join()
+        print(f"{k} has finished")
 
-        for k, v in output.items():
-            text_list.extend(v)
+    for k, v in output.items():
+        text_list.extend(v)
 
-        pickle.dump(text_list, open("text_list.p", "wb"))
+    pickle.dump(text_list, open("text_list.p", "wb"))
 
     return text_list
 
