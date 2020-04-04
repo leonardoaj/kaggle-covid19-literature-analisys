@@ -5,7 +5,7 @@ import pickle
 
 vectorizer = TfidfVectorizer()
 
-literature = get_literature_as_list(preprocess=True)
+literature = get_literature_as_list()
 
 print("Starting to vectorize...")
 vectors = vectorizer.fit_transform(literature)
