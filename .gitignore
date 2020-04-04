@@ -1,0 +1,5 @@
+*.p
+data
+.idea
+__pycache*
+venv
