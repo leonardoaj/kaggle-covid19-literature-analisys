@@ -1,22 +1,58 @@
+from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
-from functions import get_literature_as_list
-import pandas as pd
+from sklearn.metrics import silhouette_score
+from functions import get_literature_as_list, get_filename_list
+import os
 import pickle
+import matplotlib.pyplot as plt
+import shutil
 
-vectorizer = TfidfVectorizer()
+if "kmeans.p" not in os.listdir("."):
+    vectorizer = TfidfVectorizer(use_idf=True)
 
-literature = get_literature_as_list()
+    literature = get_literature_as_list()
 
-print("Starting to vectorize...")
-vectors = vectorizer.fit_transform(literature)
-print("Done.")
+    if "vectors.p" not in os.listdir("."):
+        print("Vectorizing literature")
+        vectors = vectorizer.fit_transform(literature)
+        pickle.dump(vectors, open("vectors.p", "wb"))
+    else:
+        vectors = pickle.load(open("vectors.p", "rb"))
 
-feature_names = vectorizer.get_feature_names()
 
-dense = vectors.todense()
-denselist = dense.tolist()
-df = pd.DataFrame(denselist, columns=feature_names)
+    print("Fitting kmeans")
 
-pickle.dump(df, open("dataframe.p", "wb"))
+    kmeans = MiniBatchKMeans(n_clusters=21,
+                             random_state=0,
+                             batch_size=2000,
+                             max_iter=3000).fit(vectors)
+    # sse = {}
+    # for k in range(5, 25):
+    #     kmeans = MiniBatchKMeans(n_clusters=k,
+    #                             random_state=0,
+    #                             batch_size=2000,
+    #                             max_iter=2000).fit(vectors)
+    #     # sse[k] = kmeans.inertia_
+    #     # sil_coeff = silhouette_score(vectors, kmeans.labels_, metric='euclidean')
+    #     # print("For n_clusters={}, The Silhouette Coefficient is {}".format(k, sil_coeff))
+    #
+    # plt.figure()
+    # plt.plot(list(sse.keys()), list(sse.values()))
+    # plt.xlabel("Number of clusters")
+    # plt.ylabel("SSE")
+    # plt.show()
+    # plt.savefig("elbow.png")
 
-print("done")
+    # kmeans = KMeans(n_clusters=2,
+    #                 random_state=0,
+    #                 max_iter=2000).fit(vectors)
+
+    pickle.dump(kmeans, open("kmeans.p", "wb"))
+
+# feature_names = vectorizer.get_feature_names()
+#
+# df = pd.DataFrame(vectors.todense().tolist(), columns=feature_names)
+#
+# pickle.dump(df, open("dataframe.p", "wb"))
+
+print("Finished.")
