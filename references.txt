@@ -1,1 +1,4 @@
 https://towardsdatascience.com/clustering-unsupervised-learning-788b215b074b
+https://towardsdatascience.com/word-embeddings-exploration-explanation-and-exploitation-with-code-in-python-5dac99d5d795
+https://usc-isi-i2.github.io/ISWC17workshop/accepted-papers/HSSUES_2017_paper_2.pdf
+https://maksimekin.github.io/COVID19-Literature-Clustering/plots/t-sne_covid-19_interactive.html

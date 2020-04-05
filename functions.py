@@ -42,19 +42,23 @@ def get_filename_list():
 
     return files
 
-def pre_process(files, output, rank):
+def pre_process(files, output, rank, stemmize, sentences_as_list):
 
     text_list = []
-    total_files = len(files)
 
     for k, full_body_text in enumerate(files):
 
-        if rank == 7:
-            print(k/total_files)
-
         full_body_text = re.sub('[\_\.\,\-\(\)\[\]\/\d\+\"\=]', "", full_body_text)
-        full_body_text = " ".join([ps.stem(x) for x in full_body_text.split() if x not in stop_words])
-        full_body_text = " ".join([x for x in full_body_text.split() if x in valid_words])
+
+        if stemmize:
+            full_body_text = " ".join([ps.stem(x) for x in full_body_text.split() if x not in stop_words])
+        else:
+            full_body_text = " ".join([x for x in full_body_text.split() if x not in stop_words])
+
+        if sentences_as_list:
+            full_body_text = [x for x in full_body_text.split() if x in valid_words]
+        else:
+            full_body_text = " ".join([x for x in full_body_text.split() if x in valid_words])
 
         text_list.append(full_body_text)
 
@@ -73,9 +77,13 @@ def get_vectorizer(literature):
 
     return vectors, vectorizer
 
-def get_literature_as_list(files=None) -> list:
+def get_literature_as_list(files=None,
+                           stemmize=True,
+                           sentences_as_list=False,
+                           load_pickle=False,
+                           enable_multiprocessing=True) -> list:
 
-    if not files or not "text_list.p" in os.listdir("."):
+    if load_pickle and "text_list.p" in os.listdir("."):
         text_list = pickle.load(open("text_list.p", "rb"))
     else:
 
@@ -85,32 +93,39 @@ def get_literature_as_list(files=None) -> list:
         num_cores = multiprocessing.cpu_count()
         chunk_size = total_files // num_cores
 
-        processes = []
-        manager = multiprocessing.Manager()
-        output = manager.dict()
+        if enable_multiprocessing:
+            processes = []
+            manager = multiprocessing.Manager()
+            output = manager.dict()
 
-        for rank in range(num_cores):
+            for rank in range(num_cores):
 
-            if rank + 1 == num_cores:
-                file_chunk = files[rank*chunk_size:]
-            else:
-                file_chunk = files[rank*chunk_size: (rank+1)*chunk_size]
+                if rank + 1 == num_cores:
+                    file_chunk = files[rank*chunk_size:]
+                else:
+                    file_chunk = files[rank*chunk_size: (rank+1)*chunk_size]
 
-            print(f"Reading chunk {rank}...")
-            json_contents_list = [read_json(x) for x in file_chunk]
+                print(f"Reading chunk {rank}...")
+                json_contents_list = [read_json(x) for x in file_chunk]
 
-            p = multiprocessing.Process(target=pre_process, args=(json_contents_list, output, rank))
-            p.start()
-            processes.append(p)
+                p = multiprocessing.Process(target=pre_process, args=(json_contents_list, output, rank, stemmize, sentences_as_list))
+                p.start()
+                processes.append(p)
 
-        for k, p in enumerate(processes):
-            p.join()
-            print(f"{k} has finished")
+            for k, p in enumerate(processes):
+                p.join()
+                print(f"{k} has finished")
+
+        else:
+            rank = 0
+            output = {}
+            json_contents_list = [read_json(x) for x in files]
+            pre_process(json_contents_list, output, rank, stemmize, sentences_as_list)
 
         for k, v in output.items():
             text_list.extend(v)
 
-        if not files:
+        if load_pickle:
             pickle.dump(text_list, open("text_list.p", "wb"))
 
     return text_list
