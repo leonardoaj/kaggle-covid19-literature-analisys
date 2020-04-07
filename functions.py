@@ -19,26 +19,15 @@ except LookupError:
     nltk.download('words')
     stop_words = stopwords.words('english')
 
-def get_literature_df()->pd.DataFrame:
-
-    df = pd.DataFrame()
-
-    files = get_filename_list()
-
-    for file in files:
-        df_aux = pd.DataFrame()
-
-    return df
-
 
 def get_filename_list():
 
-    directories = [f"data/{x}" for x in os.listdir("data") if os.path.isdir(f"data/{x}")]
+    directories = [x[0] for x in os.walk("data")]
 
     files = []
 
-    for dir in directories:
-        files.extend([f"{dir}/{x}" for x in os.listdir(dir)])
+    for dir in directories[1:]:
+        files.extend([f"{dir}/{x}" for x in os.listdir(dir) if os.path.isfile(f"{dir}/{x}")])
 
     return files
 
@@ -123,9 +112,10 @@ def get_literature_as_list(files=None,
             json_contents_list = [read_json(x) for x in files]
             pre_process(json_contents_list, output, rank, stemmize, sentences_as_list, split_sentences)
 
-        for k, v in output.items():
-            text_list.extend(v)
-            pickle.dump(text_list, open("sentence_vectors.p", "wb"))
+        if split_sentences:
+            for k, v in output.items():
+                text_list.extend(v)
+                pickle.dump(text_list, open("sentence_vectors.p", "wb"))
             
         if load_pickle:
             pickle.dump(text_list, open("text_list.p", "wb"))

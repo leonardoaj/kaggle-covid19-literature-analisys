@@ -13,11 +13,13 @@ sil_coeffs = {}
 vectors = pickle.load(open("vectors.p", "rb"))
 
 for k in range(5, 25):
+
     kmeans = MiniBatchKMeans(n_clusters=k,
                             random_state=0,
                             batch_size=2000,
                             max_iter=2000).fit(vectors)
     sse[k] = kmeans.inertia_
+    print(f"k={k}, sse={sse[k]}")
     if len(sys.argv) > 1 and sys.argv[1] == "sil":
         sil_coeffs[k] = silhouette_score(vectors, kmeans.labels_, metric='euclidean')
 
