@@ -31,6 +31,7 @@ def get_filename_list():
 
     return files
 
+
 def pre_process(files, output, rank, stemmize, sentences_as_list):
 
     text_list = []
