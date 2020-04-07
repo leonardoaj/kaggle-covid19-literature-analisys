@@ -81,7 +81,8 @@ def get_literature_as_list(files=None,
                            stemmize=True,
                            sentences_as_list=False,
                            load_pickle=False,
-                           enable_multiprocessing=True) -> list:
+                           enable_multiprocessing=True,
+                           split_sentences=False) -> list:
 
     if load_pickle and "text_list.p" in os.listdir("."):
         text_list = pickle.load(open("text_list.p", "rb"))
@@ -120,11 +121,12 @@ def get_literature_as_list(files=None,
             rank = 0
             output = {}
             json_contents_list = [read_json(x) for x in files]
-            pre_process(json_contents_list, output, rank, stemmize, sentences_as_list)
+            pre_process(json_contents_list, output, rank, stemmize, sentences_as_list, split_sentences)
 
         for k, v in output.items():
             text_list.extend(v)
-
+            pickle.dump(text_list, open("sentence_vectors.p", "wb"))
+            
         if load_pickle:
             pickle.dump(text_list, open("text_list.p", "wb"))
 
