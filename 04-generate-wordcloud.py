@@ -7,9 +7,13 @@ import multiprocessing
 
 
 def generate_word_cloud(group):
+    print(f"Processing group {group}")
     files = [f"groups/{group}/{x}" for x in os.listdir(f"groups/{group}")]
 
-    preprocessed_papers = get_literature_as_list(files=files, stemmize=False, enable_multiprocessing=False)
+    preprocessed_papers = get_literature_as_list(files=files,
+                                                 stemmize=False,
+                                                 enable_multiprocessing=False,
+                                                 save_pickle=False)
 
     vectors, vectorizer = get_vectorizer(preprocessed_papers)
 
@@ -21,7 +25,7 @@ def generate_word_cloud(group):
     plt.imshow(cloud)
     plt.axis("off")
     plt.tight_layout(pad=0)
-    plt.savefig(f"wordcloud-{group}.png")
+    plt.savefig(f"img/wordcloud-{group}.png")
 
 
 stop_words = stopwords.words('english')
@@ -35,4 +39,4 @@ wc = WordCloud(
 )
 
 pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-pool.map(generate_word_cloud, [str(x).zfill(2) for x in os.listdir("groups")])
+pool.map(generate_word_cloud, os.listdir("groups"))

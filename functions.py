@@ -22,12 +22,19 @@ except LookupError:
 
 def get_filename_list():
 
-    directories = [x[0] for x in os.walk("data")]
+    if not "filename_list.p" in os.listdir("."):
 
-    files = []
+        directories = [x[0] for x in os.walk("data")]
 
-    for dir in directories[1:]:
-        files.extend([f"{dir}/{x}" for x in os.listdir(dir) if os.path.isfile(f"{dir}/{x}")])
+        files = []
+
+        for dir in directories[1:]:
+            files.extend([f"{dir}/{x}" for x in os.listdir(dir) if os.path.isfile(f"{dir}/{x}")])
+
+        pickle.dump(files, open("filename_list.p", "wb"))
+
+    else:
+        files = pickle.load(open("filename_list.p", "rb"))
 
     return files
 
@@ -54,9 +61,14 @@ def pre_process(files, output, rank, stemmize, sentences_as_list):
 
     output[rank] = text_list
 
-def read_json(file):
+def read_json(file, as_list=False):
     json_file = json.loads(open(file).read())
-    return "\n".join([x['text'] for x in json_file['body_text']])
+    if as_list:
+        return [x['text'] for x in json_file['body_text']]
+    else:
+        return "\n".join([x['text'] for x in json_file['body_text']])
+
+
 
 def get_vectorizer(literature):
 
@@ -67,12 +79,14 @@ def get_vectorizer(literature):
 
     return vectors, vectorizer
 
+
 def get_literature_as_list(files=None,
                            stemmize=True,
                            sentences_as_list=False,
                            load_pickle=False,
                            enable_multiprocessing=True,
-                           split_sentences=False) -> list:
+                           split_sentences=False,
+                           save_pickle=True) -> list:
 
     if load_pickle and "text_list.p" in os.listdir("."):
         text_list = pickle.load(open("text_list.p", "rb"))
@@ -99,7 +113,11 @@ def get_literature_as_list(files=None,
                 print(f"Reading chunk {rank}...")
                 json_contents_list = [read_json(x) for x in file_chunk]
 
-                p = multiprocessing.Process(target=pre_process, args=(json_contents_list, output, rank, stemmize, sentences_as_list))
+                p = multiprocessing.Process(target=pre_process, args=(json_contents_list,
+                                                                      output,
+                                                                      rank,
+                                                                      stemmize,
+                                                                      sentences_as_list))
                 p.start()
                 processes.append(p)
 
@@ -111,14 +129,15 @@ def get_literature_as_list(files=None,
             rank = 0
             output = {}
             json_contents_list = [read_json(x) for x in files]
-            pre_process(json_contents_list, output, rank, stemmize, sentences_as_list, split_sentences)
+            pre_process(json_contents_list, output, rank, stemmize, split_sentences)
 
-        if split_sentences:
-            for k, v in output.items():
-                text_list.extend(v)
-                pickle.dump(text_list, open("sentence_vectors.p", "wb"))
-            
-        if load_pickle:
+        for k, v in output.items():
+            text_list.extend(v)
+
+        if split_sentences and save_pickle:
+            pickle.dump(text_list, open("sentence_vectors.p", "wb"))
+
+        if save_pickle:
             pickle.dump(text_list, open("text_list.p", "wb"))
 
     return text_list
